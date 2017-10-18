@@ -1,0 +1,35 @@
+#######################################
+# Syntax Coloring Map For SignalTower
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+
+SignalTower	KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+
+redOn	KEYWORD2
+yellowOn	KEYWORD2
+greenOn	KEYWORD2
+buzzerOn	KEYWORD2
+allLightsOn	KEYWORD2
+    
+redOff	KEYWORD2
+yellowOff	KEYWORD2
+greenOff	KEYWORD2
+buzzerOff	KEYWORD2
+allLightsOff	KEYWORD2
+
+redStatus	KEYWORD2
+yellowStatus	KEYWORD2
+greenStatus	KEYWORD2
+buzzerStatus	KEYWORD2
+
+
+#######################################
+# Constants (LITERAL1)
+#######################################
