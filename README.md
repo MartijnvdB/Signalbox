@@ -1,5 +1,7 @@
 # Controlling the Skoda signal tower
-This hobby project consists of a three-light and buzzer, 12V Skoda signal tower mounted in a standalone box. The signal tower is controlled by a Nodemcu microcontroller, with software written in the Arduino IDE.  ![signal tower](https://github.com/MartijnvdB/Signalbox/blob/master/tower.jpg "Skode Signal tower")
+This hobby project consists of a three-light and buzzer, 12V Skoda signal tower mounted in a standalone box. The signal tower is controlled by a Nodemcu microcontroller, with software written in the Arduino IDE. 
+
+![signal tower](https://github.com/MartijnvdB/Signalbox/blob/master/tower.jpg "Skode Signal tower")
 
 The lights on the signal tower can be controlled either by:
 - a fitted push button; pushing it briefly switches to the next light, pushing it longer switches to the previous light like so: green, green+yellow, yellow, yellow+red, red. And then back to green.
