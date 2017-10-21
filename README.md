@@ -9,7 +9,7 @@ The buzzer can only be controlled by the same JSON message.
 
 The format of the JSON message is:
 
-> { "colors": {"green":"[on|x]", "yellow":"[on|x], "red":"[on|x"]}, "buzzer":"[on|x]" }
+> { "colors": {"green":"[on|x]", "yellow":"[on|x]", "red":"[on|x]"}, "buzzer":"[on|x]" }
 
 The meaning of "[on|x]" is really "the string 'on', or any other string". Meaning that code only checks for the string "on", anything else is considered "off".
 
@@ -20,6 +20,9 @@ Network credentials should be made available in a file 'credentials.h', looking 
 > #define CONNECTION_ID "MQTTclientID"
 > #define CLIENT_NAME "MQTTclientname"
 > #define CLIENT_PASSWORD "MQTT password"
+
+![signal tower](https://github.com/MartijnvdB/Signaltower/tower.jpg "Skode Signal tower")
+
 
 ## To do
 Use an external interrupt with the pushbutton.
