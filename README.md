@@ -21,7 +21,7 @@ Network credentials should be made available in a file 'credentials.h', looking 
 > #define CLIENT_NAME "MQTTclientname"
 > #define CLIENT_PASSWORD "MQTT password"
 
-![signal tower](https://github.com/MartijnvdB/Signaltower/tower.jpg "Skode Signal tower")
+![signal tower](https://github.com/MartijnvdB/Signalbox/blob/master/tower.jpg "Skode Signal tower")
 
 
 ## To do
