@@ -16,9 +16,13 @@ The meaning of "[on|x]" is really "the string 'on', or any other string". Meanin
 Network credentials should be made available in a file 'credentials.h', looking like this:
 
 > #define SSID "yourssid"
+
 > #define PASSWORD "somepassword"
+
 > #define CONNECTION_ID "MQTTclientID"
+
 > #define CLIENT_NAME "MQTTclientname"
+
 > #define CLIENT_PASSWORD "MQTT password"
 
 ![signal tower](https://github.com/MartijnvdB/Signalbox/blob/master/tower.jpg "Skode Signal tower")
