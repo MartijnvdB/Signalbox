@@ -74,6 +74,64 @@ void SignalTower::allLightsOn() {
     greenOn();
 }
 
+/* Toggle light, going up or down on the tower. */
+void SignalTower::lightUp() {
+  if (greenStatus()) {
+    if (yellowStatus()) {
+      greenOff();
+    }
+    else {
+      yellowOn();
+    }
+  }
+  else if (yellowStatus()) {
+    if (redStatus()) {
+      yellowOff();
+    }
+    else {
+      redOn();
+    }
+  }
+  else if (redStatus()) {
+    if (yellowStatus()) {
+      yellowOff();
+    }
+    else {
+      redOff();
+      greenOn();
+    }
+  }
+} // lightUp
+void SignalTower::lightDown() {
+  if (greenStatus()) {
+    if (yellowStatus()) {
+      yellowOff();
+    }
+    else {
+      greenOff();
+      redOn();
+    }
+  }
+  else if (yellowStatus()) {
+    if (greenStatus()) {
+      yellowOff();
+    }
+    else if (redStatus()) {
+      redOff();
+    }
+    else {
+      greenOn();
+    }
+  }
+  else if (redStatus()) {
+    if (yellowStatus()) {
+      redOff();
+    }
+    else {
+      yellowOn();
+    }
+  }   
+} // lightDown
 
 /* Switch off light/buzzer. */
 void SignalTower::redOff() {
@@ -95,7 +153,7 @@ void SignalTower::allLightsOff() {
 }
 
 
-/* Return status of the light/buzzer */
+/* Return status of a single light/buzzer */
 int SignalTower::redStatus() {
   return digitalRead(redLight);
 }

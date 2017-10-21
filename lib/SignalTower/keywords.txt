@@ -12,11 +12,14 @@ SignalTower	KEYWORD1
 # Methods and Functions (KEYWORD2)
 #######################################
 
-redOn	KEYWORD2
+redOn		KEYWORD2
 yellowOn	KEYWORD2
-greenOn	KEYWORD2
+greenOn		KEYWORD2
 buzzerOn	KEYWORD2
 allLightsOn	KEYWORD2
+
+lightUp		KEYWORD2
+lightDown	KEYWORD2
     
 redOff	KEYWORD2
 yellowOff	KEYWORD2

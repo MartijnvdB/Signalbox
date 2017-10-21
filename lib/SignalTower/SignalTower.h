@@ -47,6 +47,9 @@ class SignalTower {
     void greenOn();
     void buzzerOn();
     void allLightsOn();
+    
+    void lightUp();
+    void lightDown();
 
     void redOff();
     void yellowOff();

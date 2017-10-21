@@ -17,7 +17,7 @@
 */
 
 #include <ArduinoJson.h>
-#include <SignalTower.h>
+#include "./lib/SignalTower/SignalTower.h"
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 // http://www.humblecoder.com/arduino-finite-state-machine-library/
@@ -41,24 +41,23 @@ extern "C" {
 
 
 /* Global debug flag */
-#define DEBUG 1
+#define DEBUG 0
 
 
-/* Digital pin configuration on the NodeMCU */
-#define PUSHBUTTON D1   // pushbutton for lamp control connected to D2
-#define GREEN_LIGHT D2
-#define YELLOW_LIGHT D5
-#define RED_LIGHT D6
-#define BUZZER D7
+/* Digital pin configuration on the NodeMCU.
+ * I want to use the actual pin numbers, not the 'D' numbers that are on the print,
+ * because the constructor in LightTower takes INTs.
+ * Pin numbers are defined in 'variants/nodemcu/pins_arduino.h'
+ */
+#define PUSHBUTTON D1   // pushbutton for lamp control connected to D1
+#define GREEN_LIGHT 4   // D2
+#define YELLOW_LIGHT 14 // D5
+#define RED_LIGHT 12    // D6
+#define BUZZER 13       // D7
 
 /* Button press timimgs */
 #define MIN_PRESS_MS 10     // do nothing when pressed less than this (debounce)
 #define FORWARD_MS 500      // move light up when pressed 0 < delta <= FORWARD_MS
-
-
-/* Wireless variables */
-int waitCount = 0;      // reconnect logic
-int maxWaitCount = 30;  // reconnect logic
 
 
 /* MQTT/WiFi configurations */
@@ -72,38 +71,25 @@ const char* client_name = CLIENT_NAME;
 const char* client_password = CLIENT_PASSWORD;
 const char* inTopic = "signaltower/in";
 const char* outTopic = "signaltower/out";
-
 const unsigned int reconnect_interval_msec = 5000;
 unsigned int prev_connect_attempt = 0;
 
+
+// Create a SignalTower instance
+SignalTower st(GREEN_LIGHT, YELLOW_LIGHT, RED_LIGHT, BUZZER);
+
 /*  JSON variables for messages received over MQTT.
-    Calculate buffer size: https://bblanchon.github.io/ArduinoJson/assistant/
+ *   Calculate buffer size: https://bblanchon.github.io/ArduinoJson/assistant/
 */
 const size_t bufferSize = JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + 50;
 DynamicJsonBuffer jsonBuffer(bufferSize);
+
+
 
 /* FSM variables */
 bool curState, prevState;
 unsigned long eventStartTime;
 unsigned long actionTime = 0;
-
-
-int lightCode = 0;  // which light(s) are on
-byte codeToByteValue[5] = {B01, B11, B10, B110, B100}; // for mapping an integer lightCode value to a bit/byte value
-/* lightCode decoding:
-    INT BIN colour
-    1   001 green
-    2   011 green+yellow
-    3   010 yellow
-    4   011 yellow+red
-    5   100 red
-
-   press up:
-   0 > 1 > 2 > 3 > 4 > 0
-
-   press down:
-   0 > 4 > 3 > 2 > 1 > 0
-*/
 
 /*
   State definitions.
@@ -127,15 +113,14 @@ void on_button_up_enter() {
 
   // Determine what to do based on length of button press
   if ( (actionTime > MIN_PRESS_MS) && (actionTime <= FORWARD_MS) ) {
-    lightCode = lightUp(lightCode);
+    st.lightUp(); // move up on tower
   }
   else if ( actionTime > FORWARD_MS ) {
-    lightCode = lightDown(lightCode);
+    st.lightDown(); // move down on tower
   }
   else {
-    // debounce, do nothing
+    // push button debounce, do nothing
   }
-  switchLamp(lightCode);
 } // on_button_up_enter
 void on_button_up_exit() {
 }
@@ -143,7 +128,6 @@ void on_button_down_enter() {
 }
 void on_button_down_exit() {
 }
-
 
 /* State transition events */
 #define PRESS 10
@@ -158,31 +142,22 @@ PubSubClient client(espClient);
 /* Other functions */
 
 void setup() {
-
   if (DEBUG) {
     Serial.begin(9600);
   }
 
   pinMode(PUSHBUTTON, INPUT);
-  pinMode(GREEN_LIGHT, OUTPUT);
-  pinMode(YELLOW_LIGHT, OUTPUT);
-  pinMode(RED_LIGHT, OUTPUT);
-
   prevState = digitalRead(PUSHBUTTON);
+
+  // Switch on the red light in the signal tower.
+  st.init();
+  st.redOn();
 
   /* Connect to wireless */
   WiFi.begin(ssid, password);
-
-
-
-
-  // This while() makes no sense?
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
+  while (WiFi.status() != WL_CONNECTED) { // no IP received yet
+    delay(1500);
   }
-
-
-
 
   if (DEBUG) {
     Serial.println("");
@@ -191,21 +166,25 @@ void setup() {
     Serial.println(WiFi.localIP());
   }
 
+  st.redOff();
+  st.yellowOn();
 
   // Set MQTT parameters
   client.setServer(mqtt_server, mqtt_port);
   client.setCallback(parseMQTTMessage);   // callback executed when message received
+  reconnect();  // connect to MQTT
 
-
-  /* Define state transitions
-     void add_transition(State* state_from, State* state_to, int event, void (*on_transition)());
-     void add_timed_transition(State* state_from, State* state_to, unsigned long interval, void (*on_transition)());
-     --> Last argument may be NULL
+  /* Define state transitions     
+   *  void add_transition(State* state_from, State* state_to, int event, void (*on_transition)()); 
+   *  void add_timed_transition(State* state_from, State* state_to, unsigned long interval, void (*on_transition)());
+   *  --> Last argument may be NULL
   */
   fsm.add_transition(&state_button_up, &state_button_down, PRESS, resetCounter);
   fsm.add_transition(&state_button_down, &state_button_up, RELEASE, setCounter);
 
-  switchLamp(lightCode);  // switch on green light
+
+  st.yellowOff();
+  st.greenOn();
 
 } // setup
 
@@ -220,24 +199,9 @@ void setCounter() {
   actionTime = abs(millis() - actionTime);  // abs() protects against neg. numbers in case of counter rollover during press
 }
 
-/* return next light code, moving up the tower. */
-int lightUp(int curlightCode) {
-  if (curlightCode == 4) {
-    return 0;
-  }
-  return (++curlightCode);
-}
-
-/* return next light code, moving down the tower. */
-int lightDown(int curlightCode) {
-  if (curlightCode == 0) {
-    return 4;
-  }
-  return (--curlightCode);
-}
 
 
-/* Parse the incoming message to determine light/buzzer commands.
+/* Parse the incoming MQTT message to determine light/buzzer commands.
    Structure should be like this:
   {
   "colors":{
@@ -262,58 +226,32 @@ void parseMQTTMessage(char* topic, byte* payload, unsigned int length) {
 
   // Check the root element.
   if (!root.success()) {
+    DEBUG && Serial.println("Parsing failed.");
     // ParseObject() failed
     return;
   }
 
   DEBUG && Serial.println("Parsing succeeded.");
 
-  JsonArray& colors = root["colors"];
-  const char* colors_green = colors[0]; // "on"
-  const char* colors_yellow = colors[1]; // "on"
-  const char* colors_red = colors[2]; // "on"
+  JsonObject& colors = root["colors"];
+  const char* colors_green = colors["green"]; // "on"
+  const char* colors_yellow = colors["yellow"]; // "on"
+  const char* colors_red = colors["red"]; // "on"
   const char* buzzer = root["buzzer"]; // "on"
 
   DEBUG && Serial.println("Variable assignment succeeded.");
 
-  // Set the value of 'lightcode', then switch the lamps with it.
-  if ( strcmp(colors_green, "on") == 0) {
-//    locallightCode |= B00000001;
-  }
-  if ( strcmp(colors_yellow, "on") == 0) {
-//    locallightCode |= B10;
-  }
-  if ( strcmp(colors_red, "on") == 0) {
-//    locallightCode |= B100;
-  }
-
-  DEBUG && Serial.print("Going to switch the lamp now with code ");
-  DEBUG && Serial.println(locallightCode);
-
-//  switchLamp(locallightCode);  // switch lights
-
+  // Switch the lamps and buzzer on or off.
+  strcmp(colors_green, "on") == 0 ? st.greenOn() : st.greenOff();
+  strcmp(colors_yellow, "on") == 0 ? st.yellowOn() : st.yellowOff();
+  strcmp(colors_red, "on") == 0 ? st.redOn() : st.redOff();
+  strcmp(buzzer, "on") == 0 ? st.buzzerOn() : st.buzzerOff();
 
 } // parseMQTTMessage
 
 
-
-16 Oct 2017
-switchlamp() is niet compatible met de JSON input manier. Hier moet iets aan gedaan worden.
-
-
-
-
-/* Switch the relevant lamp(s) on by bitmasking the value of codeToByteValue[] */
-void switchLamp(int position) {
-  digitalWrite(RED_LIGHT, (codeToByteValue[position] & B00000100) );
-  digitalWrite(YELLOW_LIGHT, (codeToByteValue[position] & B00000010) );
-  digitalWrite(GREEN_LIGHT, (codeToByteValue[position] & B00000001) );
-}
-
-
-
 /* Connect to MQTT
-  Returns 1 for success, 0 for failure.
+ *  Returns 1 for success, 0 for failure.
 */
 int reconnect() {
   // Attempt to connect
@@ -328,12 +266,14 @@ int reconnect() {
 }
 
 
-
+//
+// Run it
+//
 
 void loop() {
   /* The program needs to do nothing except controlling the lamp,
-      so instead of using an external interrupt to control the FSM,
-      just keep reading the input.
+   *  so instead of using an external interrupt to control the FSM,
+   *  just keep reading the input.
   */
   curState = digitalRead(PUSHBUTTON);
   if (curState != prevState) {

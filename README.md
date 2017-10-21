@@ -5,10 +5,27 @@ The lights on the signal tower can be controlled either by:
 - a fitted push button; pushing it briefly switches to the next light, pushing it longer switches to the previous light like so: green, green+yellow, yellow, yellow+red, red. And then back to green.
 - a JSON message published on a specific Mosquitto (MQTT) topic.
 
-The buzzer can only be controlled by the JSON message.
+The buzzer can only be controlled by the same JSON message.
+
+The format of the JSON message is:
+
+> { "colors": {"green":"[on|x]", "yellow":"[on|x], "red":"[on|x"]}, "buzzer":"[on|x]" }
+
+The meaning of "[on|x]" is really "the string 'on', or any other string". Meaning that code only checks for the string "on", anything else is considered "off".
+
+Network credentials should be made available in a file 'credentials.h', looking like this:
+
+> #define SSID "yourssid"
+> #define PASSWORD "somepassword"
+> #define CONNECTION_ID "MQTTclientID"
+> #define CLIENT_NAME "MQTTclientname"
+> #define CLIENT_PASSWORD "MQTT password"
+
+## To do
+Use an external interrupt with the pushbutton.
 
 # Target systems
-The code is written for the NodeMCU. It should be possible to run this on many other devices as well provided the libraries that it uses are supported:
+The code is written for the NodeMCU (ESP8266). It should be easy to run this on many other devices, provided the libraries that it uses are supported:
 
 - ArduinoJSON
 - ESP8266WiFi
@@ -17,3 +34,9 @@ The code is written for the NodeMCU. It should be possible to run this on many o
 
 # License
 This code is released under the GPL v3.
+
+
+
+
+/* END */
+
