@@ -17,12 +17,13 @@ The meaning of "[on|x]" is really "the string 'on', or any other string". Meanin
 
 Network credentials should be made available in a file 'credentials.h', looking like this:
 
-> #define SSID "yourssid"
-> #define PASSWORD "somepassword"
-> #define CONNECTION_ID "MQTTclientID"
-> #define CLIENT_NAME "MQTTclientname"
-> #define CLIENT_PASSWORD "MQTT password"
-
+```
+#define SSID "yourssid"
+#define PASSWORD "somepassword"
+#define CONNECTION_ID "MQTTclientID"
+#define CLIENT_NAME "MQTTclientname"
+#define CLIENT_PASSWORD "MQTT password"
+```
 
 # Target systems
 The code is written for the NodeMCU (ESP8266). It should be easy to run this on many other devices, provided the libraries that it uses are supported:
